@@ -1,0 +1,14 @@
+# -*- coding: utf-8 -*-
+"""In this file you can find user settings for the app"""
+
+JIRA_URL = '<url to jira server>'
+JIRA_USER = '<account with read privileges>'
+JIRA_PASS = '<password for the account'
+
+# Match all possible tickets, change if subset is desired
+TICKET_REGEXP = r'[A-Z]{1,10}-[1-9][0-9]{0,3}'
+# Optionally, to secure the hook, see;
+# http://docs.mattermost.com/developer/webhooks-outgoing.html
+MATTERMOST_TOKEN = None
+
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
