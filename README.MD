@@ -28,10 +28,11 @@ Mattermost setup
 In mattermost configure outgoing webhooks for the channel(s) you desire. And
 let them point to the server where the python code is running on port 5000 e.g.
 ```http://localhost:5000/```.
-
+Is is not recommended to use any trigger keywords for the webhook, as it might
+mean the the hook is not triggered on every occasion.
 
 Hints
-=====
+-----
 
 The python code is written using Flask, so all methods available to run a Flask
 instance can be applied.
