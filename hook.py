@@ -45,7 +45,7 @@ def receive_mattermost():
 def search_token(text):
     """Search in the provided text for a match on the regexp, and return"""
     match = re.search('(%s)' % settings.TICKET_REGEXP, text)
-    if match.group(0):
+    if match:
         return match.group(0)
     else:
         return None
@@ -87,8 +87,7 @@ def get_detail_from_jira(ticket_id):
 
     ret_str = \
        '[%s - %s](%s "%s")' % (ticket_id, issue.fields.summary, get_url(ticket_id), ticket_id) \
-       + '\n' +\
-       '=' * len(issue.fields.summary) + '\n\n' +\
+       + '\n\n' +\
        'Reported by *%s*\n' % issue.fields.reporter.displayName + \
        'Is being worked on by: *' + \
        (issue.fields.assignee.displayName if issue.fields.assignee else 'Nobody') +\
@@ -105,6 +104,6 @@ def get_detail_from_jira(ticket_id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='0.0.0.0', debug=True)
 
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
