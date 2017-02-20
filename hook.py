@@ -54,7 +54,7 @@ def send_message_back( payload ):
     headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
     r = requests.post(url, data=json.dumps(payload), headers=headers)
     if r.status_code != requests.codes.ok:
-        app.logger.error(r.status_code+' : '+r.text)
+        app.logger.error(str(r.status_code)+' : '+r.text)
 
     resp = Response(
         json.dumps({'text': '',
