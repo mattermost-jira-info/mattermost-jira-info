@@ -28,31 +28,39 @@ def receive_mattermost():
     userName = form.getlist('user_name')[0]
     requestText = form.getlist('text')[0]
     requestUserid = form.getlist('user_id')[0]
-    userIcon = settings.METTERMOST_URL+'/api/v3/users/'+requestUserid+'/image'
+    userIcon = settings.MATTERMOST_URL+'/api/v3/users/'+requestUserid+'/image'
 
     app.logger.error(form)
     if settings.MATTERMOST_TOKEN:
         if not token == settings.MATTERMOST_TOKEN:
             app.logger.error('Received wrong token, received [%s]', token)
-            return get_error_payload( fromChannel, requestText, userName, userIcon, "The integration is not correctly set up. Token not valid." )
+            return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "The integration is not correctly set up. Token not valid." ) )
 
     ticket_id = search_token(requestText)
-#    app.logger.info('Search for ticket [%s]', ticked_id)
+
     if ticket_id is None:
-        return get_error_payload( fromChannel, requestText, userName, userIcon, "Could not identify jira issue ID." )
+        return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "Could not identify jira issue ID." ) )
+
 
     payload = get_detail_from_jira(ticket_id, fromChannel, userName, requestText, requestUserid)
 
     if payload is None:
-        return get_error_payload( fromChannel, requestText, userName, userIcon, "There was an exception when searching for the issue in Jira." )
+        return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "There was an exception when searching for the issue in Jira." ) )
 
-    url = settings.METTERMOST_URL+'/hooks/'+settings.MATTERMOST_HOOK
+    return send_message_back( payload )
+
+def send_message_back( payload ):
+    url = settings.MATTERMOST_URL+'/hooks/'+settings.MATTERMOST_HOOK
     headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
     r = requests.post(url, data=json.dumps(payload), headers=headers)
-	return
-    #resp = Response( json.dumps(''), status=200 )
-    #return resp
+    if r.status_code != requests.codes.ok:
+        app.logger.error(r.status_code+' : '+r.text)
 
+    resp = Response(
+        json.dumps({'text': '',
+                    'username': 'Jira Bot'}),
+        status=200)
+    return resp
 
 def search_token(text):
     """Search in the provided text for a match on the regexp, and return"""
@@ -119,7 +127,7 @@ def get_detail_from_jira(ticket_id, fromChannel, userName, requestText, userIcon
     issueStatus = parse_icon_name(issue.fields.status)
     issueDescription = issue.fields.description
     if issueDescription is None:
-	  issueDescription = '_~ No description for this issue ~_'
+        issueDescription = '_~ No description for this issue ~_'
 
     formattedTitle = '#### ![](%s) [%s &nbsp;&nbsp;&nbsp; %s](%s "%s") ####' % (issue.fields.issuetype.iconUrl, ticket_id, issue.fields.summary, get_url(ticket_id), ticket_id)
     colorForIssue = settings.COLORS_DICTONARY.get( issue.fields.status.name, '' )
