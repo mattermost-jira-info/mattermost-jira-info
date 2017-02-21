@@ -42,7 +42,7 @@ def receive_mattermost():
         return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "Could not identify jira issue ID." ) )
 
 
-    payload = get_detail_from_jira(ticket_id, fromChannel, userName, requestText, requestUserid)
+    payload = get_detail_from_jira( ticket_id, fromChannel, userName, requestText, userIcon )
 
     if payload is None:
         return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "There was an exception when searching for the issue in Jira." ) )
