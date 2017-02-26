@@ -29,6 +29,8 @@ COLORS_DICTONARY = {
     }
 ERROR_COLOR = '#FF141A' # in case there was an error we might send the message anyway but include some error message in the attachment.
 
+# Configure which port to use for teh webservice. Default: 5000
+WEBSERVER_PORT = 5000
 
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
 
