@@ -15,10 +15,6 @@ json = flask.json
 
 app = flask.Flask(__name__)
 
-
-
-
-
 @app.route('/', methods=['POST'])
 def receive_mattermost():
     """We only have 1 incoming hook"""
@@ -39,7 +35,7 @@ def receive_mattermost():
     ticket_id = search_token(requestText)
 
     if ticket_id is None:
-        return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "Could not identify jira issue ID." ) )
+        return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "Could not identify a jira issue ID." ) )
 
 
     payload = get_detail_from_jira( ticket_id, fromChannel, userName, requestText, userIcon )
@@ -50,15 +46,8 @@ def receive_mattermost():
     return send_message_back( payload )
 
 def send_message_back( payload ):
-    url = settings.MATTERMOST_URL+'/hooks/'+settings.MATTERMOST_HOOK
-    headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
-    r = requests.post(url, data=json.dumps(payload), headers=headers)
-    if r.status_code != requests.codes.ok:
-        app.logger.error(str(r.status_code)+' : '+r.text)
-
     resp = Response(
-        json.dumps({'text': '',
-                    'username': 'Jira Bot'}),
+		json.dumps( payload ),
         status=200)
     return resp
 
@@ -78,8 +67,6 @@ def parse_icon_name(field):
         field.iconUrl + ') ' +\
         field.name
 		
-
-
 def get_url(ticket_id):
     return '%s/browse/%s' % (settings.JIRA_URL, ticket_id)
 
@@ -89,11 +76,18 @@ def get_color_for_issue(issue_status):
 
 def get_error_payload( channel, text, user, icon, errorMessage ):
     """Return the payload of the return message in case of an error"""
-    return {'channel': channel, 'text': text, 'username': user, 'icon_url': icon, 
+    return { 'response_type': 'ephemeral', 'channel': channel, 'text': 'The message has not been sent.', 'username': 'Jira Issue', 
 	          'attachments': [{
                     'fallback': 'There was a problem with the Jira bot.',
                     'color': settings.ERROR_COLOR,
-		            'text': errorMessage
+		            'text': text,
+					'fields': [
+					    {
+						  'short': False,
+						  'title': 'Reason:',
+						  'value': errorMessage
+						}
+				     ]
                   }]
 				}
 
@@ -111,9 +105,10 @@ def get_detail_from_jira(ticket_id, fromChannel, userName, requestText, userIcon
 
     try:
         issues = jc.search_issues('key=%s' % ticket_id)
-    except jira.JIRAError:
-        app.logger.warning('Search on JIRA failed', exc_info=True)
-        return get_error_payload( fromChannel, requestText, userName, userIcon, 'Search on JIRA failed')
+    except jira.JIRAError as e:
+        app.logger.error('Search on JIRA failed', exc_info=True)
+        app.logger.error('Error msg'+e.text)
+        return get_error_payload( fromChannel, requestText, userName, userIcon, 'Search on JIRA failed.\nError message: '+e.text)
 
     if not len(issues):
         # Could not find a matching ticket
@@ -133,7 +128,7 @@ def get_detail_from_jira(ticket_id, fromChannel, userName, requestText, userIcon
     colorForIssue = settings.COLORS_DICTONARY.get( issue.fields.status.name, '' )
     formattedText = formattedTitle +'\n'+issueDescription
 
-    payload = {'channel': fromChannel, 'text': requestText, 'username': userName,
+    payload = {'response_type': 'in_channel', 'channel': fromChannel, 'text': requestText, 'username': userName,
     'icon_url': userIcon,
 	'attachments': [{
         'fallback': 'Jira issue posted.',

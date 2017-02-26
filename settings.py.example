@@ -15,9 +15,6 @@ MATTERMOST_URL = 'https://mattermost.yourdomain.com'
 # http://docs.mattermost.com/developer/webhooks-outgoing.html
 MATTERMOST_TOKEN = None
 
-# Incomming Webhook UID:
-MATTERMOST_HOOK = 'kjhsd87jkhsdg54547sjhs'
-
 # You can define colors to use besides the message attachment to match Jira status codes:
 DEFAULT_COLOR = '#4A6785'; # fallback if no defined status code matches
 COLORS_DICTONARY = {
