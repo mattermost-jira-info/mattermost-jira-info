@@ -32,13 +32,16 @@ def receive_mattermost():
             app.logger.error('Received wrong token, received [%s]', token)
             return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "The integration is not correctly set up. Token not valid." ) )
 
-    ticket_id = search_token(requestText)
+    ticket_ids = search_token(requestText)
 
-    if ticket_id is None:
+    if ticket_ids is None:
         return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "Could not identify a jira issue ID." ) )
+	
+    ticket_id = ticket_ids[0]
+    
+    requestTextWithLinks = replaceIssueIdWithLink( requestText, ticket_ids )
 
-
-    payload = get_detail_from_jira( ticket_id, fromChannel, userName, requestText, userIcon )
+    payload = get_detail_from_jira( ticket_id, fromChannel, userName, requestTextWithLinks, userIcon )
 
     if payload is None:
         return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "There was an exception when searching for the issue in Jira." ) )
@@ -53,12 +56,19 @@ def send_message_back( payload ):
 
 def search_token(text):
     """Search in the provided text for a match on the regexp, and return"""
-    match = re.search('(%s)' % settings.TICKET_REGEXP, text)
-    if match:
-        return match.group(0)
+    #match = re.search('(%s)' % settings.TICKET_REGEXP, text)
+    matches = re.findall('(%s)' % settings.TICKET_REGEXP, text)
+    if matches:
+        return matches
     else:
         return None
 
+def replaceIssueIdWithLink( requestText, ticked_ids ):
+    returnString = requestText
+    for issue_id in ticked_ids:
+        returnString = returnString.replace( issue_id, '['+issue_id+']('+ get_url( issue_id ) +')' )
+    return returnString
+	
 
 def parse_icon_name(field):
     """Return a 'nice' formatter layout for icons and text"""
