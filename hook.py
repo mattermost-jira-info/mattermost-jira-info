@@ -15,6 +15,9 @@ json = flask.json
 
 app = flask.Flask(__name__)
 
+jira_url_http = settings.JIRA_URL.replace( 'https://', 'http://' )
+jira_url_https = settings.JIRA_URL.replace( 'http://', 'https://' )
+
 @app.route('/', methods=['POST'])
 def receive_mattermost():
     """We only have 1 incoming hook"""
@@ -39,7 +42,8 @@ def receive_mattermost():
 	
     ticket_id = ticket_ids[0]
     
-    requestTextWithLinks = replaceIssueIdWithLink( requestText, ticket_ids )
+    unique_issue_ids = set( ticket_ids )
+    requestTextWithLinks = replaceIssueIdWithLink( requestText, unique_issue_ids )
 
     payload = get_detail_from_jira( ticket_id, fromChannel, userName, requestTextWithLinks, userIcon )
 
@@ -49,6 +53,7 @@ def receive_mattermost():
     return send_message_back( payload )
 
 def send_message_back( payload ):
+    app.logger.error(payload)
     resp = Response(
 		json.dumps( payload ),
         status=200)
@@ -63,9 +68,10 @@ def search_token(text):
     else:
         return None
 
-def replaceIssueIdWithLink( requestText, ticked_ids ):
+def replaceIssueIdWithLink( requestText, issue_ids ):
     returnString = requestText
-    for issue_id in ticked_ids:
+    for issue_id in issue_ids:
+        returnString = remove_jira_url_from_issue( returnString, issue_id )
         returnString = returnString.replace( issue_id, '['+issue_id+']('+ get_url( issue_id ) +')' )
     return returnString
 	
@@ -77,8 +83,16 @@ def parse_icon_name(field):
         field.iconUrl + ') ' +\
         field.name
 		
-def get_url(ticket_id):
-    return '%s/browse/%s' % (settings.JIRA_URL, ticket_id)
+def get_url( issue_id ):
+    return get_full_url( issue_id, settings.JIRA_URL )
+
+def get_full_url( issue_id, url ):
+    return '%s/browse/%s' % ( url, issue_id)
+
+def remove_jira_url_from_issue( text, issue_id ):
+    returnText = text.replace( get_full_url( issue_id, jira_url_http ), issue_id )
+    returnText = returnText.replace( get_full_url( issue_id, jira_url_https ), issue_id )
+    return returnText
 
 def get_color_for_issue(issue_status):
     """Return the color matching the issue status in jira"""
