@@ -35,17 +35,15 @@ def receive_mattermost():
             app.logger.error('Received wrong token, received [%s]', token)
             return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "The integration is not correctly set up. Token not valid." ) )
 
-    ticket_ids = search_token(requestText)
+    issue_ids = search_token(requestText)
 
-    if ticket_ids is None:
+    if issue_ids is None:
         return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "Could not identify a jira issue ID." ) )
-	
-    ticket_id = ticket_ids[0]
     
-    unique_issue_ids = set( ticket_ids )
+    unique_issue_ids = set( issue_ids )
     requestTextWithLinks = replaceIssueIdWithLink( requestText, unique_issue_ids )
 
-    payload = get_detail_from_jira( ticket_id, fromChannel, userName, requestTextWithLinks, userIcon )
+    payload = get_detail_from_jira( unique_issue_ids, fromChannel, userName, requestTextWithLinks, userIcon )
 
     if payload is None:
         return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "There was an exception when searching for the issue in Jira." ) )
@@ -61,7 +59,6 @@ def send_message_back( payload ):
 
 def search_token(text):
     """Search in the provided text for a match on the regexp, and return"""
-    #match = re.search('(%s)' % settings.TICKET_REGEXP, text)
     matches = re.findall('(%s)' % settings.TICKET_REGEXP, text)
     if matches:
         return matches
@@ -116,67 +113,71 @@ def get_error_payload( channel, text, user, icon, errorMessage ):
 				}
 
 
-def get_detail_from_jira(ticket_id, fromChannel, userName, requestText, userIcon ):
+def get_detail_from_jira( issue_ids, fromChannel, userName, requestText, userIcon ):
     """Connect to JIRA and retrieve the details"""
 
-    try:
-        jc = jira.JIRA(server=settings.JIRA_URL,
-                       basic_auth=(settings.JIRA_USER, settings.JIRA_PASS))
-    except jira.JIRAError:
-        print('Connection error')
-        app.logger.error('Could not connect to JIRA', exc_info=True)
-        return get_error_payload( fromChannel, requestText, userName, userIcon, 'Could not connect to JIRA.')
+    issues_attachments = []
+	
+    for issue_id in issue_ids:
+        try:
+            jc = jira.JIRA(server=settings.JIRA_URL,
+                           basic_auth=(settings.JIRA_USER, settings.JIRA_PASS))
+        except jira.JIRAError:
+            app.logger.error('Could not connect to JIRA', exc_info=True)
+            return get_error_payload( fromChannel, requestText, userName, userIcon, 'Could not connect to JIRA.')
 
-    try:
-        issues = jc.search_issues('key=%s' % ticket_id)
-    except jira.JIRAError as e:
-        app.logger.error('Search on JIRA failed', exc_info=True)
-        app.logger.error('Error msg'+e.text)
-        return get_error_payload( fromChannel, requestText, userName, userIcon, 'Search on JIRA failed.\nError message: '+e.text)
+        try:
+            issues = jc.search_issues('key=%s' % issue_id)
+        except jira.JIRAError as e:
+            app.logger.error('Search on JIRA failed', exc_info=True)
+            return get_error_payload( fromChannel, requestText, userName, userIcon, 'Search on JIRA failed.\nError message: '+e.text)
 
-    if not len(issues):
-        # Could not find a matching ticket
-        return get_error_payload( fromChannel, requestText, userName, userIcon, 'Could not find a matching ticket for %s' % (ticked_id))
+        if not len(issues):
+            return get_error_payload( fromChannel, requestText, userName, userIcon, 'Could not find a matching ticket for %s' % (ticked_id))
 		
-    issue = issues[0]
+        issue = issues[0]
 
-    issueTitle = '[%s - %s](%s "%s")' % (ticket_id, issue.fields.summary, get_url(ticket_id), ticket_id)
-    assignee = (issue.fields.assignee.displayName if issue.fields.assignee else 'Nobody')
-    issueType = parse_icon_name(issue.fields.issuetype)
-    issueStatus = parse_icon_name(issue.fields.status)
-    issueDescription = issue.fields.description
-    if issueDescription is None:
-        issueDescription = '_~ No description for this issue ~_'
+        issueTitle = '[%s - %s](%s "%s")' % (issue_id, issue.fields.summary, get_url(issue_id), issue_id)
+        assignee = (issue.fields.assignee.displayName if issue.fields.assignee else 'Nobody')
+        issueType = parse_icon_name(issue.fields.issuetype)
+        issueStatus = parse_icon_name(issue.fields.status)
+        issueDescription = issue.fields.description
+        if issueDescription is None:
+            issueDescription = '_~ No description for this issue ~_'
 
-    formattedTitle = '#### ![](%s) [%s &nbsp;&nbsp;&nbsp; %s](%s "%s") ####' % (issue.fields.issuetype.iconUrl, ticket_id, issue.fields.summary, get_url(ticket_id), ticket_id)
-    colorForIssue = settings.COLORS_DICTONARY.get( issue.fields.status.name, '' )
-    formattedText = formattedTitle +'\n'+issueDescription
+        formattedTitle = '#### ![](%s) [%s &nbsp;&nbsp;&nbsp; %s](%s "%s") ####' % (issue.fields.issuetype.iconUrl, issue_id, issue.fields.summary, get_url(issue_id), issue_id)
+        colorForIssue = settings.COLORS_DICTONARY.get( issue.fields.status.name, '' )
+        formattedText = formattedTitle +'\n'+issueDescription
+		
+        attachment = {
+                        'fallback': 'Jira issue posted.',
+                        'color': colorForIssue,
+		                'text': formattedText,
+		                'fields': [
+                            {
+                                "short": True,
+                                "title": "Type",
+                                "value": issueType
+                            },
+                            {
+                                "short": True,
+                                "title": "Status",
+                                "value": issueStatus
+                            },
+                            {
+                                "short": False,
+                                "title": "Assignee",
+                                "value": assignee
+                            }
+                        ],
+                    }
+        issues_attachments.append( attachment )
+
 
     payload = {'response_type': 'in_channel', 'channel': fromChannel, 'text': requestText, 'username': userName,
-    'icon_url': userIcon,
-	'attachments': [{
-        'fallback': 'Jira issue posted.',
-        'color': colorForIssue,
-		'text': formattedText,
-		'fields': [
-        {
-          "short": True,
-          "title": "Type",
-          "value": issueType
-        },
-        {
-          "short": True,
-          "title": "Status",
-          "value": issueStatus
-        },
-        {
-        "short": False,
-        "title": "Assignee",
-        "value": assignee
-        }
-      ],
-    }]
-	}
+                    'icon_url': userIcon,
+	                'attachments': issues_attachments
+	              }
 
     return payload
 
