@@ -45,6 +45,7 @@ Mattermost setup
 In mattermost configure a slash(/) command of your choice and
 let it point to the server where the python code is running on the port you defined (default: 5000) e.g.
 ```http://localhost:5000/```.
+Requires Mattermost Server 3.6 (fixed attachments working for slash-commands)
 
 Hints
 -----
