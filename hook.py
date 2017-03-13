@@ -29,7 +29,6 @@ def receive_mattermost():
     requestUserid = form.getlist('user_id')[0]
     userIcon = settings.MATTERMOST_URL+'/api/v3/users/'+requestUserid+'/image'
 
-    app.logger.error(form)
     if settings.MATTERMOST_TOKEN:
         if not token == settings.MATTERMOST_TOKEN:
             app.logger.error('Received wrong token, received [%s]', token)
@@ -51,7 +50,6 @@ def receive_mattermost():
     return send_message_back( payload )
 
 def send_message_back( payload ):
-    app.logger.error(payload)
     resp = Response(
 		json.dumps( payload ),
         status=200)
