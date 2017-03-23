@@ -39,9 +39,11 @@ Install dependencies via ```pip install -r requirements.txt```
 
 Start the server via ```./runme.py```.
 
-## Start as service:
+### Start as service:
 copy the mattermost-jira-info.conf into /etc/init/
+
 edit the "Path to mattermost-jira-info installation" within the file
+
 ```sudo start mattermost-jira-info```
 
 Mattermost setup
