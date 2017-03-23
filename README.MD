@@ -1,4 +1,4 @@
-Mattermost-Jira-Info-allChannels
+Mattermost-Jira-Info
 ====================
 
 This webservice can be used to to query Jira for issue details. Once
@@ -38,6 +38,11 @@ to ```settings.py``` and fill-in the details for your environment.
 Install dependencies via ```pip install -r requirements.txt```
 
 Start the server via ```./runme.py```.
+
+## Start as service:
+copy the mattermost-jira-info.conf into /etc/init/
+edit the "Path to mattermost-jira-info installation" within the file
+```sudo start mattermost-jira-info```
 
 Mattermost setup
 ----------------
