@@ -21,13 +21,17 @@ jira_url_https = settings.JIRA_URL.replace( 'http://', 'https://' )
 @app.route('/', methods=['POST'])
 def receive_mattermost():
     """We only have 1 incoming hook"""
-    form = request.form
-    token = form.getlist('token')[0]
-    fromChannel = form.getlist('channel_name')[0]
-    userName = form.getlist('user_name')[0]
-    requestText = form.getlist('text')[0]
-    requestUserid = form.getlist('user_id')[0]
-    userIcon = settings.MATTERMOST_URL+'/api/v3/users/'+requestUserid+'/image'
+    try:
+        form = request.form
+        token = form.getlist('token')[0]
+        fromChannel = form.getlist('channel_name')[0]
+        userName = form.getlist('user_name')[0]
+        requestText = form.getlist('text')[0]
+        requestUserid = form.getlist('user_id')[0]
+        userIcon = settings.MATTERMOST_URL+'/api/v4/users/'+requestUserid+'/image'
+    except:
+        app.logger.error('Something went wrong when initializing the parameters.')
+        return send_message_back( get_error_payload( fromChannel, requestText, userName, userIcon, "The integration is not correctly set up. Token not valid." ) )
 
     if settings.MATTERMOST_TOKEN:
         if not token == settings.MATTERMOST_TOKEN:
@@ -52,7 +56,8 @@ def receive_mattermost():
 def send_message_back( payload ):
     resp = Response(
 		json.dumps( payload ),
-        status=200)
+        status=200,
+        mimetype='application/json')
     return resp
 
 def search_token(text):
