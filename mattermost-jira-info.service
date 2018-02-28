@@ -1,0 +1,10 @@
+[Unit]
+Description=mattermost jira info script
+
+[Service]
+WorkingDirectory=/root/mattermost-jira-info
+ExecStart=./runme.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
