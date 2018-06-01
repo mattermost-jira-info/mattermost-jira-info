@@ -1,0 +1,37 @@
+# -*- coding: utf-8 -*-
+import os
+
+"""In this file you can find user settings for the app"""
+
+JIRA_URL = os.environ['JIRA_URL']
+JIRA_USER = os.environ['JIRA_USER']
+JIRA_PASS = os.environ['JIRA_PASS']
+
+# Match all possible tickets, change if subset is desired
+TICKET_REGEXP = r'[A-Z]{1,10}-[1-9][0-9]{0,4}'
+
+# Mattermost base URL (no slash at the end):
+MATTERMOST_URL = os.environ['MATTERMOST_URL']
+
+# Optionally, to secure the outgoing hook, see;
+# http://docs.mattermost.com/developer/webhooks-outgoing.html
+MATTERMOST_TOKEN = None
+
+# You can define colors to use besides the message attachment to match Jira status codes:
+DEFAULT_COLOR = '#4A6785'; # fallback if no defined status code matches
+COLORS_DICTONARY = {
+    'Fixed':'#FFD351',
+	'In Progress': '#FFD351',
+	'Done': '#14892C',
+	'Draft': '#4A6785',
+	'Closed': '#14892C',
+	'Ready': '#4A6785',
+    'Rejected': '#14892C',
+	'New': '#4A6785'
+    }
+ERROR_COLOR = '#FF141A' # in case there was an error we might send the message anyway but include some error message in the attachment.
+
+# Configure which port to use for teh webservice. Default: 5000
+WEBSERVER_PORT = 5000
+
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
