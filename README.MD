@@ -46,6 +46,23 @@ edit the "Path to mattermost-jira-info installation" within the file
 
 ```sudo start mattermost-jira-info```
 
+Setup with Docker
+-----------------
+
+Build Docker image via `docker build -t mattermost-jira-info .`
+
+Start Docker container via
+
+```
+docker run -d -p 5000:5000 \
+           --name mattermost-jira-info-bot \
+           -e 'JIRA_URL=<url to jira server>' \
+           -e 'JIRA_USER=<account with read privileges>' \
+           -e 'JIRA_PASS=<password for the account>' \
+           -e 'MATTERMOST_URL=https://mattermost.yourdomain.com' \
+           mattermost-jira-info
+```
+
 Mattermost setup
 ----------------
 
